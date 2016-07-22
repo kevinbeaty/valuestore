@@ -1,0 +1,25 @@
+{
+  "name": "valuestore",
+  "version": "0.0.0",
+  "description": "Immutable Single Value store with transactional modification'",
+  "main": "index.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevinbeaty/valuestore.git"
+  },
+  "author": "Kevin Beaty",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kevinbeaty/valuestore/issues"
+  },
+  "homepage": "https://github.com/kevinbeaty/valuestore#readme",
+  "dependencies": {
+    "lodash": "^4.13.1"
+  },
+  "devDependencies": {
+    "ava": "^0.15.2"
+  }
+}
