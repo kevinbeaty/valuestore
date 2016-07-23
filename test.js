@@ -11,12 +11,34 @@ test('basic', t => {
 
   let yI = {a: 1, b: '23', c: {d: 5, e: {f: 40, g: 5000}}, h: {0: 'yay!', 1: true}}
   store.mutate(state => {
+    t.is(state.a, 0)
     state.a = 1
+    t.is(state.a, 1)
+
     state.b = '23'
+
+    t.is(state.c.d, 1)
+    t.deepEqual(state.c, {d:1, e: {f: 40, g:50}})
     state.c.d = 5
+    t.is(state.c.d, 5)
+    t.deepEqual(state.c, {d:5, e: {f: 40, g:50}})
+
+    t.is(state.c.e.g, 50)
     state.c.e.g = 5000
+    t.is(state.c.e.g, 5000)
+    t.deepEqual(state.c, {d:5, e: {f: 40, g:5000}})
+
+    t.deepEqual(state, {
+      a: 1, b: '23', c: {d: 5, e: {f: 40, g: 5000}}, h: {0: 'hi', 1: 'false'}})
+
     state.h[1] = true
+    t.deepEqual(state, {
+      a: 1, b: '23', c: {d: 5, e: {f: 40, g: 5000}}, h: {0: 'hi', 1: true}})
+
     setYay(state.h, 0)
+
+    t.deepEqual(state, {
+      a: 1, b: '23', c: {d: 5, e: {f: 40, g: 5000}}, h: {0: 'yay!', 1: true}})
   })
 
   let y = store.state
