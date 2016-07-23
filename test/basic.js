@@ -1,12 +1,16 @@
-import {Store} from './index'
+import {Store} from '../'
 import test from 'ava'
 
 
 test('basic', t => {
   let xI = {a: 0, b: 0, c: {d: 1, e: {f: 40, g: 50}}, h: {0: 'hi', 1: 'false'}}
   let store = new Store(xI)
-  let x = store.state
 
+  let mutateCount = 0
+  let mutateCountListener = () => mutateCount++
+  store.on('', mutateCountListener)
+
+  let x = store.state
   t.deepEqual(x, xI)
 
   let yI = {a: 1, b: '23', c: {d: 5, e: {f: 40, g: 5000}}, h: {0: 'yay!', 1: true}}
@@ -40,6 +44,7 @@ test('basic', t => {
     t.deepEqual(state, {
       a: 1, b: '23', c: {d: 5, e: {f: 40, g: 5000}}, h: {0: 'yay!', 1: true}})
   })
+  t.is(mutateCount, 1)
 
   let y = store.state
   t.deepEqual(x, xI)
@@ -55,6 +60,8 @@ test('basic', t => {
     let e = c.e
     setYay(e, 'f')
   })
+  t.is(mutateCount, 2)
+
   let z = store.state
   t.deepEqual(x, xI)
   t.deepEqual(y, yI)
@@ -64,11 +71,14 @@ test('basic', t => {
   store.mutate(state => {
     state.c = {d: 2330, e: {f: 4300, g: 5031}}
   })
+  t.is(mutateCount, 3)
 
   let a = store.state
   t.deepEqual(x, xI)
   t.deepEqual(y, yI)
   t.deepEqual(a, aI)
+
+  store.removeListener('', mutateCountListener)
 
   let bI = {a: 213, b: '23', c: {d: 3330, e: {f: 555, g: 5031}}, h: {0: 'yay!', 1: true}}
   store.mutate(state => {
@@ -76,6 +86,7 @@ test('basic', t => {
     state.c = {d: 3330, e: {f: 4311, g: 5031}}
     state.c.e.f = 555
   })
+  t.is(mutateCount, 3)
 
   let b = store.state
   t.deepEqual(x, xI)
