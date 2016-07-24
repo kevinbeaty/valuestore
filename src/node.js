@@ -1,4 +1,4 @@
-let {get, isPlainObject: isObject} = require('lodash')
+let {get: _get, isPlainObject: isObject} = require('lodash')
 
 function mutate(node, f){
   let mutable = new MutableNode({node})
@@ -7,27 +7,18 @@ function mutate(node, f){
 }
 
 class Node {
-  constructor({value = null, node = null, mutable = null}){
+  constructor({value, node, mutable}){
     this.leaves = {}
     this.children = {}
-
     this.keys = node ? node.keys : Object.keys(value)
 
     let {leaves, children, keys} = this
-
     let hasUpdates = mutable && mutable.hasUpdates
     let updates = hasUpdates ? mutable.children : null
 
     let props = {}
     keys.forEach(name => {
       let isLeaf = node ? !node.children[name] : !isObject(value[name])
-
-      props[name] = {
-        get: isLeaf ? () => leaves[name] : () => children[name].state,
-        set: throwReadOnly,
-        configurable: false,
-        enumerable: true
-      }
 
       let update = hasUpdates ? updates[name] : null
       if(isLeaf){
@@ -48,6 +39,13 @@ class Node {
           children[name] = node ? node.children[name] : new Node({value: value[name]})
         }
       }
+
+      props[name] = {
+        get: isLeaf ? () => leaves[name] : () => children[name].state,
+        set: throwReadOnly,
+        configurable: false,
+        enumerable: true
+      }
     })
 
     this.state = Object.seal(Object.create(null, props))
@@ -55,15 +53,14 @@ class Node {
 
   get(path){
     let {state} = this
-    return path ? get(state, path) : state
+    return path ? _get(state, path) : state
   }
 }
 
 class MutableNode {
-  constructor({node, parent = null}){
+  constructor({node, parent}){
     this.node = node
     this.parent = parent
-
     this._dirty = false
     this._dirtyChildren = false
 
@@ -113,43 +110,24 @@ class MutableNode {
     }
 
     let parent = this
-    let {node, children: updates} = this
-    let {leaves, children} = node
-    let leafNames = Object.keys(leaves)
-    let childNames = Object.keys(children)
+    let {node, children} = this
+    let {leaves, children: nodeChildren, keys} = node
 
     let props = {}
-    leafNames.forEach(name => {
-      let child = new MutableNode({parent})
-      let get = () => child.dirty ? child.value : leaves[name]
+    keys.forEach(name => {
+      let nodeChild = nodeChildren[name]
+      let child = new MutableNode({parent, node: nodeChild})
+      let childState = nodeChild ? child.state : leaves[name]
+      let get = () => child.dirty ? child.value : childState
+
+      children[name] = child
       props[name] = {
         get,
         set(val){
           if(val !== get()){
             child.dirty = true
             child.value = val
-            updates[name] = child
           }
-        },
-        configurable: false,
-        enumerable: true
-      }
-    })
-
-    childNames.forEach(name => {
-      let child = new MutableNode({parent, node: children[name]})
-      props[name] = {
-        get: () => {
-          if(child.dirty){
-            return child.value
-          }
-          updates[name] = child
-          return child.state
-        },
-        set(val){
-          child.dirty = true
-          child.value = val
-          updates[name] = child
         },
         configurable: false,
         enumerable: true
