@@ -3,25 +3,24 @@ let {get: _get, isPlainObject: isObject} = require('lodash')
 function mutate(node, f){
   let mutable = new MutableNode({node})
   f(mutable.state)
-  let updated = mutable.hasUpdates ? new Node({node, mutable}) : node
+  let updated = mutable.updated ? new Node({node, mutable}) : node
   return {node: updated, updates: mutable.updates}
 }
 
 class Node {
   constructor({value, node, mutable}){
-    this.leaves = {}
-    this.children = {}
-    this.keys = node ? node.keys : Object.keys(value)
+    let leaves = {}
+    let children = {}
+    let keys = node ? node.keys : Object.keys(value)
 
-    let {leaves, children, keys} = this
-    let hasUpdates = mutable && mutable.hasUpdates
-    let updates = hasUpdates ? mutable.children : null
+    let updated = mutable && mutable.updated
+    let updates = updated ? mutable.children : null
 
     let props = {}
     keys.forEach(name => {
       let isLeaf = node ? !node.children[name] : !isObject(value[name])
 
-      let update = hasUpdates ? updates[name] : null
+      let update = updated ? updates[name] : null
       if(isLeaf){
         if(update && update.dirty){
           leaves[name] = update.value
@@ -32,7 +31,7 @@ class Node {
       } else {
         if(update && update.dirty){
           children[name] = new Node({value: update.value})
-        } else if (update && update.dirtyChildren) {
+        } else if (update && update.updated) {
           children[name] = new Node({
             node: node ? node.children[name] : null,
             value: node ? null : value[name],
@@ -43,7 +42,13 @@ class Node {
         props[name] = children[name].state
       }
     })
+
+    this.leaves = Object.freeze(leaves)
+    this.children = Object.freeze(children)
+    this.keys = Object.freeze(keys)
     this.state = Object.freeze(props)
+
+    Object.freeze(this)
   }
 
   get(path){
@@ -57,8 +62,8 @@ class MutableNode {
     this.node = node
     this.parent = parent
     this.path = path
-    this._dirty = false
-    this._dirtyChildren = false
+    this.dirty = false
+    this.updated = false
 
     if(node){
       this.children = {}
@@ -69,44 +74,13 @@ class MutableNode {
     }
   }
 
-  get hasUpdates(){
-    return this._dirty || this._dirtyChildren
-  }
-
-  notifyUpdate(path){
+  notifyUpdate(path = this.path){
     let {parent} = this
+    this.updated = true
     if(parent){
       parent.notifyUpdate(path)
     } else {
       this.updates.push(path)
-    }
-  }
-
-  get dirty(){
-    return this._dirty
-  }
-
-  get dirtyChildren(){
-    return this._dirtyChildren
-  }
-
-  set dirty(dirty){
-    if(dirty && !this._dirty){
-      this._dirty = true
-      let {parent} = this
-      if(parent){
-        parent.dirtyChildren = true
-      }
-      this.notifyUpdate(this.path)
-    }
-  }
-
-  set dirtyChildren(dirty){
-    if(dirty){
-      this._dirtyChildren = true
-      if(this.parent){
-        this.parent.dirtyChildren = true
-      }
     }
   }
 
@@ -133,6 +107,7 @@ class MutableNode {
           if(val !== get()){
             child.dirty = true
             child.value = val
+            child.notifyUpdate()
           }
         },
         configurable: false,

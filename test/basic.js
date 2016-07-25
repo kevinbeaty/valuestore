@@ -137,4 +137,3 @@ function updateToString(node, previous){
 function stateToString(node, path){
   return JSON.stringify(get(node.state, path))
 }
-
