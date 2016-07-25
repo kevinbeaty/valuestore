@@ -1,9 +1,10 @@
 let {EventEmitter} = require('events')
-let {Node, mutate} = require('./node')
+let {create, getPath} = require('./node')
+let {mutate} = require('./mutable')
 
 class Store {
   constructor(value){
-    this.root = new Node({value})
+    this.root = create(value)
     this.emitter = new EventEmitter()
   }
 
@@ -13,19 +14,19 @@ class Store {
 
   mutate(f){
     this.previous = this.root
-    let {node, updates} = mutate(this.previous, f)
+    let {node, patch} = mutate(this.previous, f)
     this.root = node
 
     let {emitter, previous} = this
     for(let path of emitter.eventNames()){
-      let rootVal = node.get(path)
-      let prevVal = previous.get(path)
+      let rootVal = getPath(node, path)
+      let prevVal = getPath(previous, path)
       if(rootVal !== prevVal){
         emitter.emit(path, rootVal, prevVal)
       }
     }
 
-    return {node, previous, updates}
+    return {node, previous, patch}
   }
 
   on(path, listener){

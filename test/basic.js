@@ -1,7 +1,6 @@
-import {Store} from '../'
+import {Store, getPath} from '../'
 import test from 'ava'
-let {get} = require('lodash')
-
+let pointer = require('json-pointer')
 
 test('basic', t => {
   let xI = {a: 0, b: 0, c: {d: 1, e: {f: 40, g: 50}}, h: {0: 'hi', 1: 'false'}}
@@ -125,15 +124,9 @@ function setYay(o, p){
 }
 
 function updatesToStrings(mutated){
-  let {updates, node, previous} = mutated
-  return updates.map(updateToString(node, previous))
-}
+  let {node, previous, patch} = mutated
+  let str = (node, {path}) => JSON.stringify(getPath(node, path))
+  let pathStr = ({path}) => pointer.parse(path).join('.')
 
-function updateToString(node, previous){
-  let str = stateToString
-  return path => `${path.join('.')} = ${str(previous, path)} to ${str(node, path)}`
-}
-
-function stateToString(node, path){
-  return JSON.stringify(get(node.state, path))
+  return patch.map(update => `${pathStr(update)} = ${str(previous, update)} to ${str(node, update)}`)
 }

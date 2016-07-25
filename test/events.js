@@ -10,27 +10,27 @@ test('basic', t => {
   let ac = null
   let ap = null
   let an = 0
-  store.on('a', (c, p) => {ac = c; ap = p; an++})
+  store.on('/a', (c, p) => {ac = c; ap = p; an++})
 
   let bc = null
   let bp = null
   let bn = 0
-  store.on('b', (c, p) => {bc = c; bp = p; bn++})
+  store.on('/b', (c, p) => {bc = c; bp = p; bn++})
 
   let cc = null
   let cp = null
   let cn = 0
-  store.on('b.c', (c, p) => {cc = c; cp = p; cn++})
+  store.on('/b/c', (c, p) => {cc = c; cp = p; cn++})
 
   let dc = null
   let dp = null
   let dn = 0
-  store.on('b.d', (c, p) => {dc = c; dp = p; dn++})
+  store.on('/b/d', (c, p) => {dc = c; dp = p; dn++})
 
   let ec = null
   let ep = null
   let en = 0
-  store.on('b.d.e', (c, p) => {ec = c; ep = p; en++})
+  store.on('/b/d/e', (c, p) => {ec = c; ep = p; en++})
 
   store.mutate(s => {
     s.a = 1

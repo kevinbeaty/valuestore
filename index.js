@@ -1,2 +1,3 @@
 let {Store} = require('./src/store')
-module.exports = {Store}
+let {getPath} = require('./src/node')
+module.exports = {Store, getPath}
