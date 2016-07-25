@@ -13,16 +13,19 @@ class Store {
 
   mutate(f){
     this.previous = this.root
-    this.root = mutate(this.previous, f)
+    let {node, updates} = mutate(this.previous, f)
+    this.root = node
 
-    let {emitter, root, previous} = this
+    let {emitter, previous} = this
     for(let path of emitter.eventNames()){
-      let rootVal = root.get(path)
+      let rootVal = node.get(path)
       let prevVal = previous.get(path)
       if(rootVal !== prevVal){
         emitter.emit(path, rootVal, prevVal)
       }
     }
+
+    return {node, previous, updates}
   }
 
   on(path, listener){
