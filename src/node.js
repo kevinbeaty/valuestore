@@ -27,6 +27,7 @@ class Node {
         } else {
           leaves[name] = node ? node.state[name] : value[name]
         }
+        props[name] = leaves[name]
       } else {
         if(update && update.dirty){
           children[name] = new Node({value: update.value})
@@ -38,17 +39,10 @@ class Node {
         } else {
           children[name] = node ? node.children[name] : new Node({value: value[name]})
         }
-      }
-
-      props[name] = {
-        get: isLeaf ? () => leaves[name] : () => children[name].state,
-        set: throwReadOnly,
-        configurable: false,
-        enumerable: true
+        props[name] = children[name].state
       }
     })
-
-    this.state = Object.seal(Object.create(null, props))
+    this.state = Object.freeze(props)
   }
 
   get(path){
@@ -64,10 +58,7 @@ class MutableNode {
     this._dirty = false
     this._dirtyChildren = false
 
-    if(node === null){
-      this.isLeaf = true
-    } else {
-      this.isLeaf = false
+    if(node !== null){
       this.children = {}
     }
   }
@@ -115,12 +106,9 @@ class MutableNode {
 
     let props = {}
     keys.forEach(name => {
-      let nodeChild = nodeChildren[name]
-      let child = new MutableNode({parent, node: nodeChild})
-      let childState = nodeChild ? child.state : leaves[name]
-      let get = () => child.dirty ? child.value : childState
+      let child = children[name] = new MutableNode({parent, node: nodeChildren[name]})
+      let get = () => child.dirty ? child.value : child.node ? child.state : leaves[name]
 
-      children[name] = child
       props[name] = {
         get,
         set(val){
@@ -134,13 +122,8 @@ class MutableNode {
       }
     })
 
-    this._state = Object.seal(Object.create(null, props))
-    return  this._state
+    return (this._state = Object.seal(Object.create(Object.prototype, props)))
   }
-}
-
-function throwReadOnly(){
-  throw new Error('Value object is readonly')
 }
 
 module.exports = {Node, mutate}
