@@ -9,7 +9,7 @@ class Store {
   }
 
   get state(){
-    return this.root.state
+    return this.root
   }
 
   mutate(f){

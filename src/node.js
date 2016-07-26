@@ -1,36 +1,22 @@
 let pointer = require('json-pointer')
 
-function freeze(node){
-  Object.freeze(node.leaves)
-  Object.freeze(node.children)
-  Object.freeze(node.keys)
-  Object.freeze(node.state)
-  Object.freeze(node)
-  return node
-}
-
 function create(value){
   let keys = Object.keys(value)
-  let leaves = {}
-  let children = {}
   let state = {}
 
   keys.forEach(name => {
     let isLeaf = isPrimitive(value[name])
     if(isLeaf){
-      leaves[name] = value[name]
-      state[name] = leaves[name]
+      state[name] = value[name]
     } else {
-      children[name] = create(value[name])
-      state[name] = children[name].state
+      state[name] = create(value[name])
     }
   })
-  return freeze({leaves, children, keys, state})
+  return Object.freeze(state)
 }
 
 function getPath(node, path){
-  let {state} = node
-  return pointer.get(state, path)
+  return pointer.get(node, path)
 }
 
 function isPrimitive(value){
@@ -45,4 +31,4 @@ function isPrimitive(value){
   }
 }
 
-module.exports = {create, freeze, getPath}
+module.exports = {create, getPath, isPrimitive}

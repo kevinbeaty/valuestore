@@ -1,5 +1,5 @@
 let pointer = require('json-pointer')
-let {create, freeze, getPath} = require('./node')
+let {create, getPath, isPrimitive} = require('./node')
 
 function mutate(node, f){
   let mutable = new MutableNode({node})
@@ -19,34 +19,28 @@ function mutate(node, f){
 }
 
 function _mutateFrom(node, mutable){
-  let leaves = {}
-  let children = {}
-  let {keys} = node
-
   let updated = mutable.updated
   let updates = updated ? mutable.children : null
 
   let state = {}
-  keys.forEach(name => {
-    let isLeaf = !node.children[name]
+  Object.keys(node).forEach(name => {
+    let isLeaf = isPrimitive(node[name])
     let update = updates[name]
 
     if(isLeaf){
-      leaves[name] = update.dirty ? update.value : node.state[name]
-      state[name] = leaves[name]
+      state[name] = update.dirty ? update.value : node[name]
     } else {
       if(update.dirty){
-        children[name] = create(update.value)
+        state[name] = create(update.value)
       } else if(update.updated){
-        children[name] = _mutateFrom(node.children[name], update)
+        state[name] = _mutateFrom(node[name], update)
       } else {
-        children[name] = node.children[name]
+        state[name] = node[name]
       }
-      state[name] = children[name].state
     }
   })
 
-  return freeze({leaves, children, keys, state})
+  return Object.freeze(state)
 }
 
 class MutableNode {
@@ -83,16 +77,15 @@ class MutableNode {
 
     let parent = this
     let {node, children} = this
-    let {leaves, children: nodeChildren, keys} = node
 
     let props = {}
-    keys.forEach(name => {
+    Object.keys(node).forEach(name => {
       let child = children[name] = new MutableNode({
         parent,
-        node: nodeChildren[name],
+        node: node[name],
         path: parent.path.concat([name])})
 
-      let get = () => child.dirty ? child.value : child.node ? child.state : leaves[name]
+      let get = () => child.dirty ? child.value : !isPrimitive(child.node) ? child.state : node[name]
       props[name] = {
         get,
         set(val){
